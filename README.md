@@ -3,102 +3,157 @@
 </h1>
 
 <p align="center">
-  <a href="/README.md">English</a> |
-  <a href="/docs/README.es.md">Español</a> |
-  <a href="/docs/README.de.md">Deutsch</a> |
-  <a href="/docs/README.fr.md">Français</a> |
-  <a href="/docs/README.pt.md">Português</a> |
-  <a href="/docs/README.ru.md">Русский</a> |
-  <a href="/docs/README.uk.md">Українська</a> |
-  <a href="/docs/README.ja.md">日本語</a> |
-  <a href="/docs/README.ko.md">한국인</a> |
-  <a href="/docs/README.th.md">ไทย</a> |
-  <a href="/docs/README.vi.md">Tiếng Việt</a> |
-  <a href="/docs/README.id.md">Bahasa Indonesia</a> |
-  <a href="/docs/README.zh-TW.md">繁體中文</a> |
-  <a href="/docs/README.zh-CN.md">简体中文</a> 
+  <b>学习英语，一次敲击，一点进步；记忆不再盲目，学习更高效，开源单词练习工具</b>
 </p>
 
-<p align="center">
-  <b>Learn English, one keystroke at a time; smarter memorization, more efficient learning — an open-source word typing practice tool</b>
-</p>
-
-## Project Introduction
+## 项目介绍
 
 <https://www.bilibili.com/video/BV1NBbF6EE8L>
 
-## Online Access
+> 本仓库是 [zyronon/TypeWords](https://github.com/zyronon/TypeWords) 的 fork，专注于本地优先的单词打字练习。
 
-<https://typewords.cc>
+## 在线访问
+
+[https://typewords.cc](https://typewords.cc)   
 
 <img width="1920" height="1440" alt="practice words" src="/public/imgs/words.png" />
 
-## Features
+## 功能列表
 
-### Word Practice
+### 单词练习
 
-- Practice modes: Follow-along / Dictation / Self-test / Spelling from memory
-- Smart mode: Automatically calculates learning words based on memory curves, deepening memory through dictation
-- Smart Learning can skip the dictation stage in Settings if you only need to recognize words
-- Free mode: No restrictions, plan your own learning
-- Provides phonetics, pronunciation (American/British), example sentences, phrases, synonyms, root words, etymology, error statistics, and more
+- 练习模式：智能学习 / 自由 / 随机复习 / 复习 / 自测 / 听写 / 默写 / 单词测试 / 自定义流程
+- 智能模式：基于 [FSRS](https://github.com/open-spaced-repetition/ts-fsrs) 记忆算法自动计算学习单词，并通过默写加深记忆
+- 设置中可关闭智能学习/复习中的默写阶段，适合只需认读的词；独立听写模式与自定义流程不受影响
+- 自由模式：不受限制，自行规划
+- 自定义流程：可为词库自定义练习阶段顺序（跟写、自测、听写、默写）
+- 单词提供音标、发音（美音、英音）、例句、短语、近义词、同根词、词源、错误统计等功能
 
-### Favorites, Wrong Words, Mastered
+### 收藏、错词本、已掌握
 
-- Words typed incorrectly while learning are automatically added to your wrong word book for later review
-- Actively add words to mastered to automatically skip them in future sessions
-- Add words to favorites for consolidation and review
+- 学习单词时输入错误自动添加到错词本，方便后续复习
+- 可主动添加到已掌握，后续学习时自动跳过
+- 可主动添加到收藏中，以便巩固复习
 
-### Highly Customizable
+### 高度自由
 
-- Rich keyboard sound effects
-- Customizable shortcuts
-- Highly configurable settings
+- 丰富的键盘音效
+- 可自定义快捷键
+- 高度定制化的设置选项
+- 主题基于 CSS 变量驱动
 
-### Clean and Efficient
+### 简洁高效
 
-- Clean design, modern UI, ad-free
-- Refreshing interface, simple operation
-- No forced subscription to any platform
+- 简洁设计，现代化UI，无广告
+- 界面清爽，操作简单
+- 不强制关注任何平台
 
-### Vocabulary Library
+### 词库
 
-Built-in commonly used vocabulary including CET-4, CET-6, GMAT, GRE, IELTS, SAT, TOEFL, Graduate English, TEM-4, TEM-8, and more.
-Designed to meet most users' vocabulary learning needs. Community contributions of additional vocabulary are welcome.
+仓库内置 **CET-4**、**雅思词汇真经** 等常用词库。
 
-## Running the Project
+词库目录（`public/list/word.json`）与词库数据（`public/dicts/en/word/*.json`）都是普通 JSON 文件，新增词库不需要改动代码。也非常欢迎社区贡献更多的词库。
 
-#### Note: Progress is stored locally in IndexedDB. Signing in is optional; after login, progress can sync to the official cloud so you can continue on another device.
+## 数据与隐私
 
-This project is built with `Nuxt` and requires a Node.js environment.
+- **本地优先**：所有学习进度保存在浏览器 IndexedDB 中，无需注册账号。
+- **可选云同步**：登录后可将进度同步到云端，换设备登录即可继续。
+- 官方词库是按需加载的静态文件，**不会**存入 IndexedDB，也**不会**上传云端；只保存单词元数据与你的学习进度。
+- 错词、收藏、已掌握按词库分别记录，始终在你自己手里。
 
-1. Install NodeJS, refer to the [official documentation](https://nodejs.org/en/download)
-2. The project is large. It's recommended to use `git clone --depth 1 https://github.com/zyronon/TypeWords.git` to clone only the latest commit. GitHub's Download ZIP feature will not work properly.
-3. In the project root directory, open a terminal and run `pnpm install` to download dependencies.
-4. Run `pnpm run dev` to start the project. The default address is [`http://localhost:5567`](http://localhost:5567)
-5. Open [`http://localhost:5567`](http://localhost:5567) in your browser to access the project.
-6. Run `pnpm run generate` to build the project files.
+## 技术栈
 
-## Features and Suggestions
+| 层 | 选型 |
+| --- | --- |
+| 框架 | [Nuxt 4](https://nuxt.com) + Vue 3.5 |
+| 状态 | [Pinia](https://pinia.vuejs.org) |
+| 样式 | [UnoCSS](https://unocss.dev) + SCSS（CSS 变量主题） |
+| 记忆算法 | [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) |
+| 存储 | [idb-keyval](https://github.com/jakearchibald/idb-keyval)（IndexedDB），可选 [Supabase](https://supabase.com) 云同步 |
+| 国际化 | [@nuxtjs/i18n](https://i18n.nuxtjs.org)，14 种语言，Excel 工作流 |
+| 测试 | [Vitest](https://vitest.dev) |
 
-The project is currently in early development, with new features being added continuously. If you have any suggestions or feature requests, feel free to open an `Issue`.
-If you like the design philosophy of this software, please submit a `PR`. Thank you for your support!
+## 项目结构
 
-## Contributing Guide
+```
+app/
+  pages/
+    (words)/               # /words、/dict-list、/dict、/practice-words、/words-test
+    setting.vue            # 设置页
+    index.vue              # 落地页
+  layouts/                 # default（侧栏 + 初始化）/ empty（落地页）
+  components/              # 业务组件：word / setting / list / dialog
+  base/                    # 自研 UI 组件，不依赖 Element/Ant
+  core/
+    stores/                # Pinia 状态
+    composables/
+      practice-words/      # 单词练习引擎：流程配置、键入、会话、缓存恢复
+    hooks/                 # dict / fsrs / sound / theme / export
+    types/                 # Word / Dict / 枚举
+    utils/                 # 加载、升级、资源路径、同步策略
+    apis/                  # 查词 HTTP
+public/
+  dicts/en/word/           # 官方词库（只读 JSON）
+  list/                    # 词库目录
+  sound/                   # 键盘音效
+i18n/                      # i18n.xlsx（源）+ 生成的语言 JSON
+tests/                     # Vitest 单元测试
+docs/                      # 贡献指南、改造基线等文档
+```
 
-[Contributing Guidelines](/docs/CONTRIBUTING.md)
+## 运行
 
-If you're interested in this project, we welcome your contributions and will provide as much help as possible.
+#### 注：进度保存在本机 IndexedDB。登录可选；登录后可同步到官方云，换设备登录即可继续。
 
-Before contributing, please communicate with the developers to avoid code conflicts.
+本项目是基于`Nuxt`开发的，需要 node 环境来运行（推荐 Node.js 20+）。
 
-Thank you again for your contributions!
+1. 安装 NodeJS，参考[官方文档](https://nodejs.org/en/download)
+2. 项目文件很大，推荐使用 `git clone --depth 1 https://github.com/wangbar0133/TypeWords.git` 命令只克隆最近一次提交。直接下载
+   Github 提供的 Download ZIP 功能是无法运行的
+3. 在项目根目录下，打开命令行，运行`pnpm install`来下载依赖。
+4. 执行`pnpm run dev`来启动项目，项目默认地址为[`http://localhost:5567`](http://localhost:5567)
+5. 在浏览器中打开[`http://localhost:5567`](http://localhost:5567)  来访问项目。
+6. 执行`pnpm run generate`打包项目文件
 
+## 开发
 
-## ❤️ Support TypeWords
-If TypeWords has been helpful to you, feel free to sponsor the project to support server operation and future development.  
-Of course, sponsorship is not required for use—sharing the project, submitting feedback, or contributing code are also highly valuable forms of support.
+| 命令 | 说明 |
+| --- | --- |
+| `pnpm dev` | 启动开发服务器，端口 `5567` |
+| `pnpm test` | 运行 Vitest 单元测试（改动练习引擎后请运行） |
+| `pnpm generate` | 打包静态站点 |
+| `pnpm i18n:write` | 编辑 `i18n/i18n.xlsx` 后重新生成语言文件 |
+
+给贡献者的话：
+
+- 新代码使用标准 `ref` / `computed`，不要扩散 `$ref` / `$computed`。
+- 优先使用 `app/assets/css/main.scss` 中的 CSS 变量，不要写死主题色。
+- 单词练习逻辑在 `app/core/composables/practice-words/`，调整阶段顺序改 `practice-flow-config.ts`，不要改页面。
+- 修改词库/设置/练习缓存的持久化结构时，需要提供升级路径并升级版本号。
+
+## 功能与建议
+
+目前项目处于开发初期，新功能正在持续添加中，如果你对软件有任何功能与建议，欢迎在 `Issues` 中提出
+如果你也喜欢本软件的设计思想，欢迎提交 `Pr`，非常感谢你对我们的支持！
+
+## 贡献指南
+
+[贡献准则](/docs/CONTRIBUTING.md)
+
+如果您对本项目感兴趣，我们非常欢迎参与到项目的贡献中，我们会尽可能地提供帮助
+
+在贡献前，我们希望您能与开发者进行沟通，以避免代码冲突
+
+再次感谢您对本项目的贡献！🎉
+
+## ❤️ 支持 TypeWords
+
+如果 TypeWords 对您有所帮助，欢迎赞助项目，支持服务器运行和后续开发。   
+当然，不赞助也完全不影响使用。分享项目、提交反馈或贡献代码，同样是非常宝贵的支持。
 
 <img width="300" height="390" alt="practice words" src="/public/imgs/zhifubao.png" />
 <img width="300" height="390" alt="practice words" src="/public/imgs/weixin.png" />
 
+## 许可证
+
+[GPL-3.0](LICENSE)
