@@ -8,7 +8,6 @@ const canonicalURL = $computed(() => new URL(route.path, `${siteOrigin}/`).toStr
 const nonIndexableRoutePrefixes = [
   '/fsrs',
   '/import',
-  '/practice-articles',
   '/practice-sentences',
   '/practice-words',
   '/rrweb',

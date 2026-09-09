@@ -1,5 +1,5 @@
 {
-	"app_desc": "学习英语，一次敲击，一点进步，开源单词与文章练习工具",
+	"app_desc": "学习英语，一次敲击，一点进步，开源单词练习工具",
 	"app_name": "Type Words",
 	"start_word_practice": "开始单词练习",
 	"start_article_practice": "开始文章练习",
@@ -812,5 +812,23 @@
 	"spell": "拼写",
 	"listen": "听写",
 	"dictation": "默写",
-	"identify": "自测"
+	"identify": "自测",
+	"word_practice_dictation": "默写",
+	"word_practice_dictation_desc": "关闭后，智能学习和复习不再进入默写；跟写、听写、自测不变。适合只需认读的词。",
+	"auth_official_sync": "官方云同步",
+	"auth_login_desc": "登录后可将进度同步到云端；不登录也可在本机练习。",
+	"auth_official_not_configured": "官方同步尚未配置。可在环境变量中设置 NUXT_PUBLIC_SUPABASE_URL 与 NUXT_PUBLIC_SUPABASE_ANON_KEY，或使用下方自建项目。",
+	"auth_logged_in_as": "当前账号：",
+	"auth_logout": "退出登录",
+	"auth_logout_and_clear": "退出并清除本机进度",
+	"auth_logout_clear_confirm": "将退出登录并清空本机进度，云端数据不会删除。确定吗？",
+	"auth_logout_success": "已退出登录",
+	"auth_logout_clear_success": "已退出并清除本机进度",
+	"auth_login_success": "登录成功",
+	"auth_register_check_email": "注册成功，请查收邮箱完成验证后再登录",
+	"auth_email": "邮箱",
+	"auth_password": "密码",
+	"auth_register": "注册",
+	"auth_login": "登录",
+	"auth_advanced_self_host": "高级：使用自己的 Supabase 项目"
 }

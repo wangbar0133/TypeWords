@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Toast } from '@/base'
-import { useRuntimeStore } from '../stores'
+import { useRuntimeStore } from '../stores/runtime.ts'
+import { canSyncToCloud } from './sync-policy'
 
 export const SUPABASE_CONFIG_KEY = 'supabase_config'
 
@@ -13,10 +14,33 @@ export interface SupabaseConfig {
   statusMessage?: string
 }
 
+export type ResolvedSupabaseCredentials = {
+  url: string
+  key: string
+  source: 'custom' | 'official'
+}
+
 const defaultConfig: SupabaseConfig = {
   url: '',
   key: '',
   status: 'idle',
+}
+
+function dummyClient(): SupabaseClient {
+  return {
+    from: () => ({
+      select: () => Promise.resolve({ data: [] }),
+      upsert: () => Promise.resolve({ data: [] }),
+      insert: () => Promise.resolve({ data: [] }),
+    }),
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      signInWithPassword: () => Promise.resolve({ data: { session: null, user: null }, error: new Error('NO_SUPABASE') }),
+      signUp: () => Promise.resolve({ data: { session: null, user: null }, error: new Error('NO_SUPABASE') }),
+      signOut: () => Promise.resolve({ error: null }),
+    },
+  } as unknown as SupabaseClient
 }
 
 export function getConfig(): SupabaseConfig | null {
@@ -47,60 +71,87 @@ export function setConfig(partial: Partial<SupabaseConfig>): void {
   localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(next))
 }
 
+export function getOfficialSupabaseCredentials(): { url: string; key: string } | null {
+  try {
+    const config = useRuntimeConfig()
+    const url = String(config.public.supabaseUrl || '').trim()
+    const key = String(config.public.supabaseAnonKey || '').trim()
+    if (!url || !key) return null
+    return { url, key }
+  } catch {
+    return null
+  }
+}
+
+export function resolveSupabaseCredentials(): ResolvedSupabaseCredentials | null {
+  const custom = getConfig()
+  if (custom?.url && custom?.key) {
+    return { url: custom.url, key: custom.key, source: 'custom' }
+  }
+  const official = getOfficialSupabaseCredentials()
+  if (official) return { ...official, source: 'official' }
+  return null
+}
+
 export class Supabase {
-  static instance: ReturnType<typeof createClient> | null = null
+  static instance: SupabaseClient | null = null
   static supabaseUrl = ''
   static supabaseKey = ''
   static errorCount = 0
+  static userId: string | null = null
 
-  /** 是否允许执行同步：仅当 config 存在、url/key 有值且 status === 'success' 时返回 true */
+  static setSessionUser(userId: string | null): void {
+    this.userId = userId
+  }
+
+  static getUserId(): string | null {
+    return this.userId
+  }
+
+  static hasCredentials(): boolean {
+    return !!resolveSupabaseCredentials()
+  }
+
+  /** 是否允许执行同步：有凭据且已登录。 */
   static check(): boolean {
-    const c = getConfig()
-    if (!c?.url || !c?.key) return false
-    if (c.status !== 'success') return false
-    this.supabaseUrl = c.url
-    this.supabaseKey = c.key
+    const creds = resolveSupabaseCredentials()
+    if (!canSyncToCloud({ hasSession: !!this.userId, hasCredentials: !!creds })) return false
+    this.supabaseUrl = creds.url
+    this.supabaseKey = creds.key
     return true
   }
 
   static saveConfig(url: string, key: string): void {
+    this.instance = null
     setConfig({ url, key })
   }
 
   static removeConfig(): void {
+    this.instance = null
     localStorage.removeItem(SUPABASE_CONFIG_KEY)
   }
 
-  /** 拿到客户端；仅根据 url/key 建连，不依赖 status（供设置页保存配置时验表使用） */
-  static getInstance(): ReturnType<typeof createClient> {
-    if (!Supabase.instance) {
-      const c = getConfig()
-      if (c?.url && c?.key) {
-        this.supabaseUrl = c.url
-        this.supabaseKey = c.key
-        try {
-          Supabase.instance = createClient(this.supabaseUrl, this.supabaseKey)
-        } catch (e) {
-          Toast.error((e as Error).message)
-          Supabase.instance = {
-            from: () => ({
-              select: () => Promise.resolve({ data: [] }),
-              upsert: () => Promise.resolve({ data: [] }),
-              insert: () => Promise.resolve({ data: [] }),
-            }),
-          } as unknown as ReturnType<typeof createClient>
-        }
-      } else {
-        Supabase.instance = {
-          from: () => ({
-            select: () => Promise.resolve({ data: [] }),
-            upsert: () => Promise.resolve({ data: [] }),
-            insert: () => Promise.resolve({ data: [] }),
-          }),
-        } as unknown as ReturnType<typeof createClient>
+  static getAuthClient(): SupabaseClient | null {
+    const creds = resolveSupabaseCredentials()
+    if (!creds) return null
+    if (!this.instance || this.supabaseUrl !== creds.url || this.supabaseKey !== creds.key) {
+      this.supabaseUrl = creds.url
+      this.supabaseKey = creds.key
+      try {
+        this.instance = createClient(creds.url, creds.key, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        })
+      } catch (e) {
+        Toast.error((e as Error).message)
+        this.instance = dummyClient()
       }
     }
-    return Supabase.instance as ReturnType<typeof createClient>
+    return this.instance
+  }
+
+  /** 拿到客户端；仅根据 url/key 建连，不依赖 status（供设置页保存配置时验表使用） */
+  static getInstance(): SupabaseClient {
+    return this.getAuthClient() ?? dummyClient()
   }
 
   static getConfig(): SupabaseConfig | null {
@@ -109,6 +160,12 @@ export class Supabase {
 
   static getStatus(): { status: SupabaseStatus; statusMessage?: string } {
     const c = getConfig()
+    if (this.userId && resolveSupabaseCredentials()?.source === 'official') {
+      return {
+        status: c?.status && c.status !== 'idle' ? c.status : 'success',
+        statusMessage: c?.statusMessage,
+      }
+    }
     return {
       status: c?.status ?? 'idle',
       statusMessage: c?.statusMessage,
@@ -117,8 +174,6 @@ export class Supabase {
 
   static setStatus(status: SupabaseStatus, statusMessage?: string): void {
     if (status === 'error') {
-      // debugger
-      //如果是请求错误，则可重试3次再报错，因为会有很多误判
       if ('TypeError: Failed to fetch' === statusMessage && this.errorCount < 3) {
         this.errorCount++
         return
@@ -130,6 +185,9 @@ export class Supabase {
     }
     const runtimeStore = useRuntimeStore()
     runtimeStore.isError = status === 'error'
-    setConfig({ status, statusMessage })
+    const creds = resolveSupabaseCredentials()
+    if (creds?.source === 'custom' || getConfig()) {
+      setConfig({ status, statusMessage })
+    }
   }
 }

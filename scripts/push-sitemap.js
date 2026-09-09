@@ -1,5 +1,3 @@
-const fs = require("fs");
-const bookList = require('../../../public/list/article.json')
 const dictList = require('../../../public/list/word.json')
 
 async function pushUrls() {
@@ -8,15 +6,12 @@ async function pushUrls() {
   const token = ""; // 在百度站长平台获取
 
   // 读取 urls.txt，每行一个 URL
-  let urls = bookList.flat().map(book => {
-    return site + '/practice-articles/' + book.id
-  }).concat(dictList.flat().map(book => {
+  let urls = dictList.flat().map(book => {
     return site + '/practice-words/' + book.id
-  })).concat([
+  }).concat([
     site + '/words',
-    site + '/articles',
     site + '/setting',
-  ]).slice(7, 17)
+  ]).slice(0, 10)
 
   if (urls.length === 0) {
     console.error("❌ urls.txt 里没有 URL");

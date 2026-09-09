@@ -1,7 +1,7 @@
 import type { Article, Sentence } from '../types'
 import { getDefaultArticleWord, getDefaultDict, PracticeArticleWordType } from '../types'
 import { _nextTick, cloneDeep, ensureCustomDictCopy } from '../utils'
-import { usePlayWordAudio, useTTsPlayAudio } from './sound'
+import { usePlaySentenceAudio, usePlayWordAudio } from './sound'
 import { getSentenceAllText, getSentenceAllTranslateText } from './translate'
 import { useBaseStore } from '../stores/base'
 import { useRuntimeStore } from '../stores/runtime'
@@ -399,7 +399,7 @@ function hasValidArticleTextAudioPosition(target: ArticleTextAudio) {
 
 export function usePlayArticleTextAudio() {
   const settingStore = useSettingStore()
-  const ttsPlayAudio = useTTsPlayAudio()
+  const playSentenceAudio = usePlaySentenceAudio()
   let timer: ReturnType<typeof setTimeout> | undefined
 
   function playArticleTextAudio(target: ArticleTextAudio, ref?: HTMLAudioElement) {
@@ -428,10 +428,7 @@ export function usePlayArticleTextAudio() {
     }
 
     if (ref?.src) ref.pause()
-    ttsPlayAudio(target.text, {
-      rate: settingStore.articleSoundSpeed,
-      volume: settingStore.articleSoundVolume / 100,
-    })
+    playSentenceAudio(target.text)
   }
 
   return {

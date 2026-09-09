@@ -2,19 +2,13 @@ import { computed, ref, watch } from 'vue'
 import { useSettingStore } from '../stores/setting'
 import type { SettingState } from '../stores/setting'
 
-type VolumeKey =
-  | 'wordSoundVolume'
-  | 'sentenceSoundVolume'
-  | 'articleSoundVolume'
-  | 'keyboardSoundVolume'
-  | 'effectSoundVolume'
+type VolumeKey = 'wordSoundVolume' | 'sentenceSoundVolume' | 'keyboardSoundVolume' | 'effectSoundVolume'
 
-type SpeedKey = 'wordSoundSpeed' | 'sentenceSoundSpeed' | 'articleSoundSpeed'
+type SpeedKey = 'wordSoundSpeed' | 'sentenceSoundSpeed'
 
 export const SOUND_VOLUME_ITEMS: { key: VolumeKey; labelKey: string }[] = [
   { key: 'wordSoundVolume', labelKey: 'word_pronunciation' },
   { key: 'sentenceSoundVolume', labelKey: 'sentence_volume' },
-  { key: 'articleSoundVolume', labelKey: 'article_volume' },
   { key: 'keyboardSoundVolume', labelKey: 'keyboard_volume' },
   { key: 'effectSoundVolume', labelKey: 'effect_volume' },
 ]
@@ -22,7 +16,6 @@ export const SOUND_VOLUME_ITEMS: { key: VolumeKey; labelKey: string }[] = [
 export const SOUND_SPEED_ITEMS: { key: SpeedKey; labelKey: string }[] = [
   { key: 'wordSoundSpeed', labelKey: 'word_speed' },
   { key: 'sentenceSoundSpeed', labelKey: 'sentence_speed' },
-  { key: 'articleSoundSpeed', labelKey: 'article_speed' },
 ]
 
 function createMasterControl<K extends keyof SettingState>(keys: K[]) {

@@ -31,6 +31,7 @@ import { type BaseState, getDefaultBaseState, getDefaultSettingState, useBaseSto
 import type { BackupData, SaveData, Snapshot } from '../types/types.ts'
 import { SyncDataType, CompareResult, DictType } from '../types/enum'
 import { Supabase } from '../utils/supabase'
+import { TYPEWORDS_DATA_CONFLICT_TARGET, withUserId } from '../utils/sync-policy'
 import { del, get, set } from 'idb-keyval'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Toast } from '@/base'
@@ -87,6 +88,10 @@ function getSyncClient(client?: SupabaseClient | null): SupabaseClient | null {
   if (client) return client
   if (!Supabase.check()) return null
   return Supabase.getInstance() as SupabaseClient
+}
+
+function getSyncUserId(): string | null {
+  return Supabase.getUserId()
 }
 
 async function getLocalPersistMeta(type: SyncDataType): Promise<LocalPersistMeta | null> {
@@ -211,13 +216,17 @@ async function compareResultByType(
 
 async function upsertServerDatas(rows: RemoteDataRow[], client?: SupabaseClient | null): Promise<boolean> {
   const sb = getSyncClient(client)
-  if (!sb) return false
+  const userId = getSyncUserId()
+  if (!sb || !userId) return false
   try {
     console.log(
       'Upserting server data',
       rows.map(row => row.type)
     )
-    const { error } = await (sb as any).from('typewords_data').upsert(rows, { onConflict: 'type' })
+    const payload = withUserId(rows as Array<RemoteDataRow & Record<string, unknown>>, userId)
+    const { error } = await (sb as any)
+      .from('typewords_data')
+      .upsert(payload, { onConflict: TYPEWORDS_DATA_CONFLICT_TARGET })
     if (error) {
       Supabase.setStatus('error', error?.message ?? String(error))
       return false
@@ -487,10 +496,18 @@ export function useDataSyncPersistence() {
         },
       ]
       try {
-        const { error } = await (sb as any).from('typewords_data').upsert(rows, { onConflict: 'type' })
-        if (error) {
+        const userId = getSyncUserId()
+        if (!userId) {
           syncResult = false
-          Supabase.setStatus('error', error?.message ?? String(error))
+        } else {
+          const payload = withUserId(rows as Array<(typeof rows)[number] & Record<string, unknown>>, userId)
+          const { error } = await (sb as any)
+            .from('typewords_data')
+            .upsert(payload, { onConflict: TYPEWORDS_DATA_CONFLICT_TARGET })
+          if (error) {
+            syncResult = false
+            Supabase.setStatus('error', error?.message ?? String(error))
+          }
         }
       } catch (error) {
         syncResult = false
@@ -581,7 +598,7 @@ export function useDataSyncPersistence() {
     if (type === SyncDataType.setting) return settingStore.$state
   }
 
-  async function clear() {
+  async function resetLocalStores() {
     let d = getDefaultBaseState()
     d.load = true
     let d1 = getDefaultSettingState()
@@ -596,6 +613,21 @@ export function useDataSyncPersistence() {
     }
     store.setState(d)
     settingStore.setState(d1)
+    return data
+  }
+
+  async function clearLocalOnly() {
+    const data = await resetLocalStores()
+    const updated_at = new Date().toISOString()
+    await persistLocalState(SyncDataType.dict, data.dict.val, updated_at)
+    await persistLocalState(SyncDataType.setting, data.setting.val, updated_at)
+    await persistLocalState(SyncDataType.practice_word, null, updated_at)
+    await persistLocalState(SyncDataType.practice_article, null, updated_at)
+    return true
+  }
+
+  async function clear() {
+    const data = await resetLocalStores()
     return await forcePushLocalDataToRemote(data)
   }
 
@@ -611,5 +643,6 @@ export function useDataSyncPersistence() {
     syncData,
     getDictSyncBlockReason,
     clear,
+    clearLocalOnly,
   }
 }

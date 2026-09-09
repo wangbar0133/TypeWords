@@ -60,7 +60,7 @@ export const SAVE_DICT_KEY = {
 }
 export const SAVE_SETTING_KEY = {
   key: 'typing-word-setting',
-  version: 23,
+  version: 24,
 }
 
 //5版本，不再单独保存 app version字段
@@ -95,6 +95,11 @@ export const LIB_JS_URL = {
   XLSX: `${ENV.LIBS_URL}/xlsx.full.min.js`,
 }
 export const PronunciationApi = 'https://dict.youdao.com/dictvoice?audio='
+
+export function getDictVoiceUrl(text: string, soundType: string = 'us'): string {
+  const type = soundType === 'uk' ? 1 : 2
+  return `${PronunciationApi}${encodeURIComponent(text)}&type=${type}`
+}
 export const DefaultShortcutKeyMap = {
   [ShortcutKey.EditArticle]: 'Ctrl+E',
   [ShortcutKey.PlayWordPronunciation]: 'Ctrl+P',

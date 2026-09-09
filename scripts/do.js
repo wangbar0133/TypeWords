@@ -10,12 +10,7 @@ async function generateSitemap() {
 
   // 只提交可索引、有独立内容且使用自引用 canonical 的页面。
   const pages = [
-    { url: '/', changefreq: 'daily', priority: 1.0 },
-    { url: '/words', changefreq: 'daily', priority: 0.9 },
-    { url: '/articles', changefreq: 'daily', priority: 0.9 },
-    { url: '/nce', changefreq: 'weekly', priority: 0.7 },
-    { url: '/doc', changefreq: 'weekly', priority: 0.3 },
-    { url: '/help', changefreq: 'monthly', priority: 0.5 },
+    { url: '/words', changefreq: 'daily', priority: 1.0 },
     { url: '/about', changefreq: 'monthly', priority: 0.5 },
     { url: '/releases', changefreq: 'weekly', priority: 0.4 },
   ]

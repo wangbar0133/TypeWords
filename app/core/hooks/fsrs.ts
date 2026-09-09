@@ -1,17 +1,17 @@
 import { type Card, type CardInput, FSRS, type Grade, Rating } from 'ts-fsrs'
 import { useSettingStore } from '../stores/setting.ts'
+import { gradeByWrongTimes } from './fsrs-grade.ts'
+
+export { gradeByWrongTimes } from './fsrs-grade.ts'
 
 export function useGetGradeByWrongTimes() {
   let store = useSettingStore()
   function getGradeByWrongTimes(wrongTimes?: number): Rating {
-    if (wrongTimes !== undefined) {
-      if (wrongTimes <= store.fsrsEasyLimit) return Rating.Easy
-      else if (wrongTimes <= store.fsrsGoodLimit) return Rating.Good
-      else if (wrongTimes <= store.fsrsHardLimit) return Rating.Hard
-      else return Rating.Again
-    } else {
-      return Rating.Easy
-    }
+    return gradeByWrongTimes(wrongTimes, {
+      easy: store.fsrsEasyLimit,
+      good: store.fsrsGoodLimit,
+      hard: store.fsrsHardLimit,
+    })
   }
   return { getGradeByWrongTimes }
 }

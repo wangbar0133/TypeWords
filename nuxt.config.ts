@@ -63,13 +63,9 @@ export default defineNuxtConfig({
   },
   // ssr: false,
   routeRules: {
+    '/': { redirect: '/words' },
     '/words': { ssr: false },
-    '/articles': { ssr: false },
     '/setting': { ssr: false },
-    '/book/nce1': { prerender: true },
-    '/book/nce2': { prerender: true },
-    '/book/nce3': { prerender: true },
-    '/book/nce4': { prerender: true },
   },
   vite: {
     plugins: [
@@ -129,6 +125,9 @@ export default defineNuxtConfig({
   ],
   // 运行时配置
   runtimeConfig: {
+    fishApiKey: process.env.FISH_API_KEY || '',
+    fishVoiceId: process.env.FISH_VOICE_ID || '8ef4a238714b45718ce04243307c57a7',
+    fishTtsModel: process.env.FISH_TTS_MODEL || 's2.1-pro-free',
     public: {
       apiBase: process.env.API_BASE || 'http://localhost/',
       origin: process.env.ORIGIN || 'https://typewords.cc',
@@ -136,6 +135,9 @@ export default defineNuxtConfig({
       passwordRsaPublicKey: process.env.VITE_PASSWORD_RSA_PUBLIC_KEY || '',
       latestCommitHash: latestCommitHash + (process.env.NODE_ENV === 'production' ? '' : ' (dev)'),
       latestCommitTime: latestCommitTime,
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || '',
+      supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      fishTtsEnabled: Boolean(process.env.FISH_API_KEY),
     },
   },
   // 构建配置

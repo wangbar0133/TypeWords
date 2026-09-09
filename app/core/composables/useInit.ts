@@ -1,7 +1,7 @@
 import { APP_VERSION } from '../config/env'
 import { debounce } from '../utils'
 import type { BaseState, SettingState } from '../stores'
-import { useBaseStore, useRuntimeStore, useSettingStore } from '../stores'
+import { useBaseStore, useRuntimeStore, useSettingStore, useUserStore } from '../stores'
 import { Supabase } from '../utils/supabase'
 import { ensureHashGuardBeforeInit, useDataSyncPersistence } from './useDataSyncPersistence'
 import { SyncDataType } from '../types'
@@ -56,7 +56,8 @@ export function useInit() {
     document.removeEventListener('visibilitychange', onvisibilitychange)
 
     await ensureHashGuardBeforeInit()
-    // await userStore.init()
+    const userStore = useUserStore()
+    await userStore.init()
     let dictData = await store.init()
     let settingData = await settingStore.init()
     if (dictData && settingData) {

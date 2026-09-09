@@ -3,7 +3,9 @@ import { shallowRef } from 'vue'
 import type { TaskWords, Word } from '@/core/types/types.ts'
 import { WordPracticeMode } from '@/core/types/enum.ts'
 import { shuffle } from '@/core/utils'
+import { useSettingStore } from '@/core/stores/setting.ts'
 import {
+  applyWordPracticeDictationSetting,
   BUILTIN_FLOWS,
   CURRENT_FLOW_VERSION,
   getFlowConfig,
@@ -266,7 +268,11 @@ export function createPracticeFlowRuntime(initialConfig: PracticeFlowConfig = BU
   }
 
   function loadPracticeFlow(flowIdOrConfig: string | PracticeFlowConfig) {
-    activeFlowConfig.value = resolveFlowInput(flowIdOrConfig)
+    const settingStore = useSettingStore()
+    activeFlowConfig.value = applyWordPracticeDictationSetting(
+      resolveFlowInput(flowIdOrConfig),
+      settingStore.wordPracticeDictation !== false
+    )
     return activeFlowConfig.value
   }
 

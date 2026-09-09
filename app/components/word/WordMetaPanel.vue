@@ -14,7 +14,7 @@ import { getDefaultWord } from '@/core/types/func.ts'
 import { useSettingStore } from '@/core/stores/setting.ts'
 import ClickableEnglishText from '@/components/word/ClickableEnglishText.vue'
 import ClickableWord from '@/components/word/ClickableWord.vue'
-import { Toast, VolumeIcon } from '@/base'
+import { VolumeIcon } from '@/base'
 import { useI18n } from 'vue-i18n'
 import TranslationList from '@/components/word/TranslationList.vue'
 import TypingSentence from '~/components/practice-sentences/TypingSentence.vue'
@@ -24,8 +24,7 @@ import { SENTENCE_PLAY_SHORTCUT_KEYS, ShortcutKey } from '@/core'
 import { WordPracticeType } from '@/core/types/enum.ts'
 import { computed } from 'vue'
 import { watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { getBrowserKey, useTTsPlayAudio } from '@/core/hooks/sound.ts'
+import { usePlaySentenceAudio } from '@/core/hooks/sound.ts'
 
 const { t: $t } = useI18n()
 
@@ -44,10 +43,8 @@ const emit = defineEmits<{
 }>()
 
 const settingStore = useSettingStore()
-const router = useRouter()
-const ttsPlayAudio = useTTsPlayAudio()
+const playSentenceAudio = usePlaySentenceAudio()
 let highlightedSentenceIndex = $ref(-1)
-let ttsVoiceHintShown = false
 const showDetails = computed(
   () =>
     props.effective.revealAll ||
@@ -80,30 +77,7 @@ function noticePlaySentence(index: number) {
 }
 
 function playTtsWithGuide(text: string, onEnd?: () => void) {
-  if (!ttsVoiceHintShown) {
-    const hasVoice = settingStore.ttsVoiceMap?.some(v => v.key === getBrowserKey() && v.voice)
-    if (!hasVoice) {
-      ttsVoiceHintShown = true
-      const ins = Toast.warning(
-        '例句默认使用浏览器内置 TTS 发音，若无声请前往「设置 → 音效设置 → TTS 声色」选择可用声色',
-        {
-          duration: 10000,
-          action: {
-            text: '设置',
-            onClick: () => {
-              router.push('/setting?index=4')
-              ins.close()
-            },
-          },
-        }
-      )
-    }
-  }
-  ttsPlayAudio(text, {
-    onEnd,
-    volume: settingStore.sentenceSoundVolume / 100,
-    rate: settingStore.sentenceSoundSpeed,
-  })
+  playSentenceAudio(text, { onEnd })
 }
 
 function playSentence(index: number, options?: { highlight?: boolean }) {

@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <b>Learn English, one keystroke at a time; smarter memorization, more efficient learning - an open-source word and article practice tool</b>
+  <b>Learn English, one keystroke at a time; smarter memorization, more efficient learning — an open-source word typing practice tool</b>
 </p>
 
 ## Project Introduction
@@ -32,7 +32,6 @@
 <https://typewords.cc>
 
 <img width="1920" height="1440" alt="practice words" src="/public/imgs/words.png" />
-<img width="1920" height="1440" alt="practice articles" src="/public/imgs/articles.png" />
 
 ## Features
 
@@ -40,14 +39,9 @@
 
 - Practice modes: Follow-along / Dictation / Self-test / Spelling from memory
 - Smart mode: Automatically calculates learning words based on memory curves, deepening memory through dictation
+- Smart Learning can skip the dictation stage in Settings if you only need to recognize words
 - Free mode: No restrictions, plan your own learning
 - Provides phonetics, pronunciation (American/British), example sentences, phrases, synonyms, root words, etymology, error statistics, and more
-
-### Article Memorization
-
-- Built-in classic textbooks; you can also add or import articles with one-click translation and bilingual comparison
-- Follow-along + dictation dual modes, sentence-by-sentence input with automatic pronunciation for more efficient memorization
-- Supports listening while writing from memory to reinforce learning
 
 ### Favorites, Wrong Words, Mastered
 
@@ -74,7 +68,7 @@ Designed to meet most users' vocabulary learning needs. Community contributions 
 
 ## Running the Project
 
-#### Note: This project can run standalone with data saved locally. Manual backup is required when switching devices; this does not affect normal usage.
+#### Note: Progress is stored locally in IndexedDB. Signing in is optional; after login, progress can sync to the official cloud so you can continue on another device.
 
 This project is built with `Nuxt` and requires a Node.js environment.
 

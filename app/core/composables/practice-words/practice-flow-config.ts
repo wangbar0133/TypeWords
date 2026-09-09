@@ -306,6 +306,27 @@ export function getFlowConfig(flowId: string): PracticeFlowConfig {
   return BUILTIN_FLOWS[flowId] ?? BUILTIN_FLOWS.system
 }
 
+const DICTATION_FILTER_FLOW_IDS = new Set(['system', 'review'])
+
+/**
+ * 全局默写开关：关闭后从内置 system / review flow 去掉默写 step。
+ * 独立「默写」模式与自定义 flow 不受影响。
+ */
+export function applyWordPracticeDictationSetting(
+  config: PracticeFlowConfig,
+  enabled: boolean
+): PracticeFlowConfig {
+  const next = JSON.parse(JSON.stringify(config)) as PracticeFlowConfig
+  if (enabled || !DICTATION_FILTER_FLOW_IDS.has(next.id)) return next
+  next.nodes = next.nodes
+    .map(node => ({
+      ...node,
+      steps: node.steps.filter(step => step.templateId !== 'dictation'),
+    }))
+    .filter(node => node.steps.length > 0)
+  return next
+}
+
 /**
  * 列出所有内置 flowId。
  * 【Phase 3 编排页「恢复默认」会用】

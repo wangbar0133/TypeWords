@@ -1,5 +1,5 @@
 {
-	"app_desc": "學習英語，一次敲擊，一點進步，開源單詞與文章練習工具",
+	"app_desc": "學習英語，一次敲擊，一點進步，開源單詞練習工具",
 	"app_name": "Type Words",
 	"start_word_practice": "開始單詞練習",
 	"start_article_practice": "開始文章練習",
@@ -812,5 +812,23 @@
 	"spell": "拼寫",
 	"listen": "聽寫",
 	"dictation": "默寫",
-	"identify": "自測"
+	"identify": "自測",
+	"word_practice_dictation": "默寫",
+	"word_practice_dictation_desc": "關閉後，智慧學習和複習不再進入默寫；跟寫、聽寫、自測不變。適合只需認讀的詞。",
+	"auth_official_sync": "官方雲同步",
+	"auth_login_desc": "登入後可將進度同步到雲端；不登入也可在本機練習。",
+	"auth_official_not_configured": "官方同步尚未設定。可在環境變數中設定 NUXT_PUBLIC_SUPABASE_URL 與 NUXT_PUBLIC_SUPABASE_ANON_KEY，或使用下方自建專案。",
+	"auth_logged_in_as": "目前帳號：",
+	"auth_logout": "登出",
+	"auth_logout_and_clear": "登出並清除本機進度",
+	"auth_logout_clear_confirm": "將登出並清空本機進度，雲端資料不會刪除。確定嗎？",
+	"auth_logout_success": "已登出",
+	"auth_logout_clear_success": "已登出並清除本機進度",
+	"auth_login_success": "登入成功",
+	"auth_register_check_email": "註冊成功，請查收郵箱完成驗證後再登入",
+	"auth_email": "郵箱",
+	"auth_password": "密碼",
+	"auth_register": "註冊",
+	"auth_login": "登入",
+	"auth_advanced_self_host": "進階：使用自己的 Supabase 專案"
 }

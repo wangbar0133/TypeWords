@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { Option, Select, Slider, Switch, VolumeIcon } from '@/base'
 import SettingItem from './SettingItem.vue'
 import SoundMasterControl from './SoundMasterControl.vue'
 import { useSettingStore } from '@/core/stores/setting.ts'
 import { ENV, SoundFileOptions } from '@/core/config/env.ts'
-import { getBrowserKey, getAudioFileUrl, usePlayAudio } from '@/core/hooks/sound.ts'
+import { getAudioFileUrl, usePlayAudio } from '@/core/hooks/sound.ts'
 import {
   useSoundMasterSettings,
   SOUND_VOLUME_ITEMS,
@@ -13,6 +13,7 @@ import {
 } from '@/core/composables/useSoundMasterSettings.ts'
 
 const settingStore = useSettingStore()
+const fishTtsEnabled = computed(() => Boolean(useRuntimeConfig().public.fishTtsEnabled))
 const {
   volumeExpanded,
   volumeIsUnified,
@@ -28,55 +29,6 @@ const showVolumeSubsInSections = computed(() => !volumeIsUnified.value && !volum
 const showSpeedSubsInSections = computed(() => !speedIsUnified.value && !speedExpanded.value)
 const showVolumeSubsInMaster = computed(() => volumeExpanded.value)
 const showSpeedSubsInMaster = computed(() => speedExpanded.value)
-
-// ---- TTS 声色 ----
-const ttsVoiceList = ref<SpeechSynthesisVoice[]>([])
-const ttsSelectKey = ref(0)
-
-onMounted(() => {
-  if (typeof speechSynthesis === 'undefined') return
-  const load = () => {
-    ttsVoiceList.value = speechSynthesis
-      .getVoices()
-      .filter(v => v.lang.startsWith('en'))
-      .sort((a, b) => (b.localService ? 0 : 1) - (a.localService ? 0 : 1))
-    ttsSelectKey.value++
-  }
-  load()
-  speechSynthesis.onvoiceschanged = load
-})
-
-const browserKey = getBrowserKey()
-
-const currentTtsVoice = computed({
-  get() {
-    return settingStore.ttsVoiceMap?.find(v => v.key === browserKey)?.voice ?? ''
-  },
-  set(voiceName: string) {
-    const map = settingStore.ttsVoiceMap ? [...settingStore.ttsVoiceMap] : []
-    const idx = map.findIndex(v => v.key === browserKey)
-    if (idx >= 0) {
-      map[idx] = { key: browserKey, voice: voiceName }
-    } else {
-      map.push({ key: browserKey, voice: voiceName })
-    }
-    settingStore.ttsVoiceMap = map
-  },
-})
-
-const exampleText = 'How are you? I am fine, thank you. And you?'
-
-function previewTtsVoice(voiceName: string) {
-  if (typeof speechSynthesis === 'undefined') return
-  speechSynthesis.cancel()
-  const msg = new SpeechSynthesisUtterance(exampleText)
-  msg.lang = 'en-US'
-  msg.volume = settingStore.sentenceSoundVolume / 100
-  msg.rate = settingStore.sentenceSoundSpeed
-  const voice = ttsVoiceList.value.find(v => v.name === voiceName)
-  if (voice) msg.voice = voice
-  speechSynthesis.speak(msg)
-}
 </script>
 
 <template>
@@ -128,48 +80,18 @@ function previewTtsVoice(voiceName: string) {
     <SettingItem :title="$t('auto_play_first_sentence')" :desc="$t('auto_play_first_sentence_desc')">
       <Switch v-model="settingStore.autoPlayFirstSentence" />
     </SettingItem>
+    <div class="text-sm color-gray mb-2">
+      {{
+        fishTtsEnabled
+          ? '例句使用 Fish Audio 动漫女声（E-Girl）。接口失败时回退有道词典发音。'
+          : '例句优先 Fish Audio。请在项目根目录 .env 写入 FISH_API_KEY 后重启 pnpm dev。'
+      }}
+    </div>
     <SettingItem v-if="showVolumeSubsInSections" :title="$t('sentence_volume')">
       <Slider v-model="settingStore.sentenceSoundVolume" showText showValue unit="%" />
     </SettingItem>
     <SettingItem v-if="showSpeedSubsInSections" :title="$t('sentence_speed')">
       <Slider v-model="settingStore.sentenceSoundSpeed" :step="0.1" :min="0.5" :max="3" showText showValue />
-    </SettingItem>
-    <SettingItem :title="$t('tts_voice_setting_title')" :desc="$t('tts_voice_setting_desc')">
-      <Select
-        :key="ttsSelectKey"
-        v-model="currentTtsVoice"
-        :placeholder="ttsVoiceList.length ? $t('tts_select_placeholder') : $t('tts_no_voice_available')"
-        class="w-80!"
-      >
-        <Option v-for="voice in ttsVoiceList" :key="voice.name" :label="voice.name" :value="voice.name">
-          <div class="flex justify-between items-center w-full">
-            <span class="truncate">{{
-              voice.name + `（${voice.localService ? $t('tts_local_voice') : $t('tts_network_voice')}）`
-            }}</span>
-            <VolumeIcon :time="100" @click="previewTtsVoice(voice.name)" />
-          </div>
-        </Option>
-      </Select>
-    </SettingItem>
-    <div>{{ $t('tts_voice_preview_sentence') }}{{ exampleText }}</div>
-    <div v-if="!currentTtsVoice" class="text-sm text-orange-500 mt-1 mb-2">
-      {{ $t('tts_no_voice_warning') }}
-    </div>
-
-    <!-- 文章音效 -->
-    <div class="line"></div>
-    <SettingItem :mainTitle="$t('article_sound_settings')" />
-    <SettingItem :title="$t('auto_play_sentence')">
-      <Switch v-model="settingStore.articleSound" />
-    </SettingItem>
-    <SettingItem :title="$t('play_next_after_end')">
-      <Switch v-model="settingStore.articleAutoPlayNext" />
-    </SettingItem>
-    <SettingItem v-if="showVolumeSubsInSections" :title="$t('article_volume')">
-      <Slider v-model="settingStore.articleSoundVolume" showText showValue unit="%" />
-    </SettingItem>
-    <SettingItem v-if="showSpeedSubsInSections" :title="$t('article_speed')">
-      <Slider v-model="settingStore.articleSoundSpeed" :step="0.1" :min="0.5" :max="3" showText showValue />
     </SettingItem>
 
     <!-- 按键音效 -->

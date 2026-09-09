@@ -2,7 +2,7 @@ import { onMounted, watchEffect } from 'vue'
 import { useSettingStore } from '../stores/setting'
 import { ref } from 'vue'
 
-import { ENV, PronunciationApi, SoundFileOptions } from '../config/env'
+import { ENV, getDictVoiceUrl, SoundFileOptions } from '../config/env'
 import { Toast } from '@/base'
 
 /**
@@ -209,10 +209,7 @@ export function usePlayWordAudio() {
       }, 5000)
     }
     // console.log('playAudio-handle', handle, playbackRate)
-    let url = `${PronunciationApi}${word}&type=2`
-    if (settingStore.soundType === 'uk') {
-      url = `${PronunciationApi}${word}&type=1`
-    }
+    const url = getDictVoiceUrl(word, settingStore.soundType)
     let onended = () => {
       if (generation !== wordPlaybackGeneration) return
       onEnd?.()
@@ -250,6 +247,96 @@ export interface TTsPlayOptions {
   pitch?: number
   lang?: string
   onEnd?: () => void
+}
+
+const sentenceBlobCache = new Map<string, string>()
+const sentenceInflight = new Map<string, Promise<string>>()
+
+async function getFishSentenceAudioUrl(text: string): Promise<string> {
+  const cached = sentenceBlobCache.get(text)
+  if (cached) return cached
+  const pending = sentenceInflight.get(text)
+  if (pending) return pending
+
+  const request = fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+    .then(async response => {
+      if (!response.ok) {
+        throw new Error(`Fish TTS ${response.status}`)
+      }
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      sentenceBlobCache.set(text, objectUrl)
+      return objectUrl
+    })
+    .finally(() => {
+      sentenceInflight.delete(text)
+    })
+
+  sentenceInflight.set(text, request)
+  return request
+}
+
+export function usePlaySentenceAudio() {
+  const settingStore = useSettingStore()
+  const ttsFallback = useTTsPlayAudio()
+
+  function playYoudaoOrBrowser(text: string, generation: number, onended: () => void, playBrowser: () => void) {
+    const audio = getCachedWordAudio()
+    if (!audio) {
+      playBrowser()
+      return
+    }
+    audio.onended = onended
+    audio.onerror = playBrowser
+    audio.src = getDictVoiceUrl(text, settingStore.soundType)
+    audio.volume = settingStore.sentenceSoundVolume / 100
+    audio.playbackRate = settingStore.sentenceSoundSpeed
+    void audio.play().catch(playBrowser)
+  }
+
+  function play(text: string, options: { onEnd?: () => void } = {}) {
+    if (!text) return
+    const audio = getCachedWordAudio()
+    cancelWordPracticeAudio()
+    const generation = ++wordPlaybackGeneration
+    const onended = () => {
+      if (generation !== wordPlaybackGeneration) return
+      options.onEnd?.()
+    }
+    const playBrowser = () => {
+      if (generation !== wordPlaybackGeneration) return
+      ttsFallback(text, {
+        rate: settingStore.sentenceSoundSpeed,
+        volume: settingStore.sentenceSoundVolume / 100,
+        onEnd: onended,
+      })
+    }
+    if (!audio) {
+      playBrowser()
+      return
+    }
+
+    void getFishSentenceAudioUrl(text)
+      .then(url => {
+        if (generation !== wordPlaybackGeneration) return
+        audio.onended = onended
+        audio.onerror = () => playYoudaoOrBrowser(text, generation, onended, playBrowser)
+        audio.src = url
+        audio.volume = settingStore.sentenceSoundVolume / 100
+        audio.playbackRate = settingStore.sentenceSoundSpeed
+        void audio.play().catch(() => playYoudaoOrBrowser(text, generation, onended, playBrowser))
+      })
+      .catch(() => {
+        if (generation !== wordPlaybackGeneration) return
+        playYoudaoOrBrowser(text, generation, onended, playBrowser)
+      })
+  }
+
+  return play
 }
 
 export function useTTsPlayAudio() {

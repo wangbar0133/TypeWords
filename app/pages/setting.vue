@@ -3,14 +3,13 @@ import { defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import { useSettingStore } from '@/core/stores/setting'
 import { getShortcutKey, useEventListener } from '@/core/hooks/event'
 import { checkAndUpgradeSaveDict, checkAndUpgradeSaveSetting, cloneDeep, isEmpty, loadJsLib } from '@/core/utils'
-import { BaseButton, BaseInput, BasePage, Form, FormItem, type FormType, PopConfirm, Toast, UploadButton } from '@/base'
+import { BaseButton, BasePage, Close, PopConfirm, Toast, UploadButton } from '@/base'
 import { useBaseStore } from '@/core/stores/base'
 import {
   APP_NAME,
   APP_VERSION,
   BACKUP_INDEX_KEY,
   DefaultShortcutKeyMap,
-  DictId,
   LIB_JS_URL,
   LOCAL_FILE_KEY,
   Origin,
@@ -22,17 +21,15 @@ import Log from '@/components/setting/Log.vue'
 import About from '@/components/About.vue'
 import CommonSetting from '@/components/setting/CommonSetting.vue'
 import FsrsSetting from '@/components/setting/FsrsSetting.vue'
-import ArticleSetting from '@/components/setting/ArticleSetting.vue'
 import WordSetting from '@/components/setting/WordSetting.vue'
 import SoundSetting from '@/components/setting/SoundSetting.vue'
+import AuthSyncPanel from '@/components/setting/AuthSyncPanel.vue'
 import { checkAndUpgradePracticeWordCache, PRACTICE_ARTICLE_CACHE, PRACTICE_WORD_CACHE } from '@/core/utils/cache'
 import { useDataSyncPersistence } from '@/core/composables/useDataSyncPersistence'
 import SettingItem from '@/components/setting/SettingItem.vue'
 import { Supabase } from '@/core/utils/supabase.ts'
 import BackupGateDialog from '@/components/dialog/BackupGateDialog.vue'
-
-import { createClient } from '@supabase/supabase-js'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { BackupData, Snapshot } from '@/core'
 
 const Dialog = defineAsyncComponent(() => import('@/base/dialog/Dialog.vue'))
@@ -48,6 +45,15 @@ type HistoryBackupMeta = HistoryBackupIndexItem & {
 }
 
 let route = useRoute()
+const router = useRouter()
+
+function closeSetting() {
+  if (router.options.history.state.back) {
+    router.back()
+  } else {
+    router.replace('/words')
+  }
+}
 const { t } = useI18n()
 let title = APP_NAME + t('setting_page_title_suffix')
 useSeoMeta({
@@ -204,9 +210,8 @@ function resetShortcutKeyMap() {
 }
 
 let importLoading = $ref(false)
-let configLoading = $ref(false)
 
-const { loading: exportLoading, exportData, getExportedData } = useExport()
+const { loading: exportLoading, exportData } = useExport()
 
 function upgradeImportedPracticeWordCache(data: BackupData['val']) {
   data[PRACTICE_WORD_CACHE.key] = checkAndUpgradePracticeWordCache(data[PRACTICE_WORD_CACHE.key], data.setting.val)
@@ -314,12 +319,10 @@ async function importData(e) {
 
 let showBackupGate = $ref(false)
 let showHistoryDialog = $ref(false)
-let pendingNextAction = $ref<'import' | 'supabase_save' | 'restore_history' | ''>('')
+let pendingNextAction = $ref<'import' | 'restore_history' | ''>('')
 let historyBackups = $ref<HistoryBackupMeta[]>([])
 let restoreTarget = $ref<HistoryBackupMeta | null>(null)
 let restoreLoading = $ref(false)
-let showSbFirstSyncChoiceDialog = $ref(false)
-let sbSyncChoiceLoading = $ref(false)
 
 function openGate(type) {
   pendingNextAction = type
@@ -350,13 +353,6 @@ function formatHistoryTime(timestamp: number): string {
 function openHistoryRestoreGate(item: HistoryBackupMeta) {
   restoreTarget = item
   openGate('restore_history')
-}
-
-function openSupabaseSaveGate() {
-  sbFormRef?.validate(valid => {
-    if (!valid) return
-    openGate('supabase_save')
-  })
 }
 
 async function restoreHistoryData() {
@@ -400,158 +396,10 @@ async function restoreHistoryData() {
   }
 }
 
-let tempSbInstance = null
-
-async function onSbFirstSyncChoice(action: 'push_local' | 'pull_remote') {
-  if (sbSyncChoiceLoading) return
-  sbSyncChoiceLoading = true
-  try {
-    if (action === 'push_local') {
-      let localData = await getExportedData()
-      const ok = await dataSyncPersistence.forcePushLocalDataToRemote(localData.val, tempSbInstance)
-      if (!ok) throw new Error(t('push_local_failed'))
-      Toast.success(t('push_local_success'))
-    } else {
-      const ok = await dataSyncPersistence.pullAllRemoteToLocal(tempSbInstance)
-      if (!ok) throw new Error(t('pull_remote_failed'))
-      Toast.success(t('pull_remote_success'))
-    }
-    Supabase.setStatus('success')
-    sbStatus = Supabase.getStatus()
-    Supabase.saveConfig(sbForm?.url, sbForm?.key)
-    showSbFirstSyncChoiceDialog = false
-  } catch (error) {
-    const msg = (error as Error)?.message ?? String(error)
-    Supabase.setStatus('error', msg)
-    sbStatus = Supabase.getStatus()
-    Toast.error(t('sync_error_with_msg') + msg)
-  } finally {
-    sbSyncChoiceLoading = false
-  }
-}
-
-function transferOk() {
-  setTimeout(() => {
-    window.location.href = '/words'
-  }, 1500)
-}
-
 async function clearAllData() {
   await dataSyncPersistence.clear()
   Supabase.removeConfig()
-  sbForm.url = ''
-  sbForm.key = ''
-  sbStatus = { status: 'idle', statusMessage: undefined }
   Toast.success(t('clear_success'))
-}
-
-let sbFormRef = $ref<FormType>()
-const initialSbConfig = Supabase.getConfig()
-let sbForm = $ref({
-  url: initialSbConfig?.url ?? '',
-  key: initialSbConfig?.key ?? '',
-})
-let sbStatus = $ref(Supabase.getStatus())
-watch(
-  () => tabIndex,
-  () => {
-    if (tabIndex === 5) sbStatus = Supabase.getStatus()
-  }
-)
-
-let sbFormRules = {
-  url: [{ required: true, message: t('supabase_url_required'), trigger: 'blur' }],
-  key: [{ required: true, message: t('supabase_key_required'), trigger: 'blur' }],
-}
-
-//能否使用同步数据功能,如果有自定义的文章里面有音频，则不可以
-const canSyncToServe = $computed(() => {
-  //筛选自定义和收藏
-  let bookList = store.article.bookList.filter(v => v.custom || [DictId.articleCollect].includes(v.id))
-  let audioFileIdList = []
-  bookList.forEach(v => {
-    //筛选 audioFileId 字体有值的
-    v.articles
-      .filter(s => !s.audioSrc && s.audioFileId)
-      .forEach(a => {
-        //所有 id 存起来，下次直接判断字符串是否相等，因为这个watch会频繁调用
-        audioFileIdList.push(a.audioFileId)
-      })
-  })
-  return audioFileIdList.length === 0
-})
-
-async function doSaveSbConfig() {
-  if (configLoading) return
-  showBackupGate = false
-  configLoading = true
-  tempSbInstance = createClient(sbForm?.url, sbForm?.key)
-  try {
-    // 检测 typewords_data 表是否存在
-    const { data: existingData, error: checkError } = await tempSbInstance.from('typewords_data').select('type')
-    if (checkError) {
-      Supabase.setStatus('error', checkError?.message ?? t('table_not_exist'))
-      sbStatus = Supabase.getStatus()
-      Toast.error(t('table_not_exist'))
-    } else {
-      // 表已存在，检测是否需要插入默认数据
-      const rows = (existingData ?? []) as { type: string }[]
-      const existingTypes = rows.map(d => d.type)
-      const defaultData = [
-        { type: 'dict', data: {} },
-        { type: 'setting', data: {} },
-        { type: 'practice_word', data: {} },
-        { type: 'practice_article', data: {} },
-      ]
-      for (const item of defaultData) {
-        if (!existingTypes.includes(item.type)) {
-          await (tempSbInstance as any).from('typewords_data').insert(item)
-        }
-      }
-      const { data: hasVersionData, error: versionError } = await (tempSbInstance as any)
-        .from('typewords_data')
-        .select('type, data_version')
-        .in('type', ['dict', 'setting', 'practice_word', 'practice_article'])
-        .not('data_version', 'is', null)
-      if (versionError) {
-        throw new Error(versionError?.message ?? String(versionError))
-      }
-      const hasRemoteVersionData = Array.isArray(hasVersionData) && hasVersionData.length > 0
-
-      if (hasRemoteVersionData) {
-        showSbFirstSyncChoiceDialog = true
-      } else {
-        Supabase.setStatus('success')
-        sbStatus = Supabase.getStatus()
-        await onSbFirstSyncChoice('push_local')
-        Toast.success(t('save_success'))
-        Supabase.saveConfig(sbForm?.url, sbForm?.key)
-        transferOk()
-      }
-    }
-  } catch (error) {
-    const msg = (error as Error)?.message ?? String(error)
-    Supabase.setStatus('error', msg)
-    sbStatus = Supabase.getStatus()
-    Toast.error(t('error_occurred') + msg)
-  } finally {
-    configLoading = false
-  }
-}
-
-function removeSbConfig() {
-  sbFormRef?.validate(async valid => {
-    if (valid) {
-      Supabase.removeConfig()
-      sbForm.url = ''
-      sbForm.key = ''
-      sbStatus = { status: 'idle', statusMessage: undefined }
-      Toast.success(t('clear_success'))
-      setTimeout(() => {
-        location.href = '/words'
-      }, 1000)
-    }
-  })
 }
 
 function disable360() {
@@ -569,7 +417,10 @@ function disable360() {
 <template>
   <BasePage>
     <div class="setting text-md card flex flex-col" style="height: calc(100vh - 3rem)">
-      <div class="page-title text-align-center">{{ $t('setting') }}</div>
+      <div class="page-title text-align-center relative">
+        {{ $t('setting') }}
+        <Close class="absolute right-0 top-1/2 -translate-y-1/2" @click="closeSetting" />
+      </div>
       <div class="flex flex-1 overflow-hidden gap-4">
         <div class="left">
           <div class="tabs">
@@ -584,10 +435,6 @@ function disable360() {
             <div class="tab" :class="tabIndex === 2 && 'active'" @click="tabIndex = 2">
               <IconFluentTextUnderlineDouble20Regular />
               <span>{{ $t('word_settings') }}</span>
-            </div>
-            <div class="tab" :class="tabIndex === 3 && 'active'" @click="tabIndex = 3">
-              <IconFluentBookLetter20Regular />
-              <span>{{ $t('article_settings') }}</span>
             </div>
             <div class="tab" :class="tabIndex === 4 && 'active'" @click="tabIndex = 4">
               <IconClarityVolumeUpLine />
@@ -623,7 +470,6 @@ function disable360() {
           <CommonSetting v-if="tabIndex === 0" />
           <FsrsSetting v-if="tabIndex === 1" />
           <WordSetting v-if="tabIndex === 2" />
-          <ArticleSetting v-if="tabIndex === 3" />
           <SoundSetting v-if="tabIndex === 4" />
 
           <div v-if="tabIndex === 5">
@@ -665,62 +511,7 @@ function disable360() {
             </div>
           </div>
 
-          <div v-if="tabIndex === 6">
-            <p class="text-red font-bold">过时功能：由于经常同步失败，不再推荐继续使用，请等待官方同步功能</p>
-            <!--          Supabase 设置  -->
-            <SettingItem :title="$t('supabase_config')" :desc="$t('supabase_config_desc')">
-              <div v-if="sbStatus.status !== 'idle'" class="mt-2 text-sm">
-                <span v-if="sbStatus.status === 'success'" class="text-green">{{ $t('sync_status_running') }}</span>
-                <span v-else-if="sbStatus.status === 'error'" class="text-red">
-                  {{ $t('sync_status_failed') }}{{ sbStatus.statusMessage ? `（${sbStatus.statusMessage}）` : '' }}
-                </span>
-                <span v-else-if="sbStatus.status === 'syncing'">{{ $t('sync_status_syncing') }}</span>
-              </div>
-            </SettingItem>
-
-            <div class="mb-6">
-              <div>
-                {{ $t('supabase_website') }}
-                <a href="https://supabase.com/" target="_blank">https://supabase.com/</a>
-              </div>
-              <div>
-                {{ $t('supabase_tutorial') }}
-                <a href="https://www.kdocs.cn/l/cduLx52XXXgw" target="_blank">https://www.kdocs.cn/l/cduLx52XXXgw</a>
-              </div>
-              <div>
-                {{ $t('supabase_intro', { appName: APP_NAME }) }}
-              </div>
-            </div>
-
-            <div class="relative">
-              <Form ref="sbFormRef" :rules="sbFormRules" :model="sbForm">
-                <FormItem label="Url" prop="url">
-                  <BaseInput v-model="sbForm.url" />
-                </FormItem>
-                <FormItem label="Key" prop="key">
-                  <BaseInput v-model="sbForm.key" />
-                </FormItem>
-              </Form>
-              <div class="flex justify-end">
-                <BaseButton size="large" @click="removeSbConfig" :disabled="!canSyncToServe">{{
-                  $t('delete_config')
-                }}</BaseButton>
-                <BaseButton
-                  size="large"
-                  @click="openSupabaseSaveGate"
-                  :loading="configLoading"
-                  :disabled="!canSyncToServe"
-                  >{{ runtimeStore.isError ? $t('retry') : $t('save_config') }}</BaseButton
-                >
-              </div>
-              <div
-                class="absolute top-0 left-0 w-full h-full bg-white opacity-80 cursor-not-allowed z-10 center rounded-md"
-                v-if="!canSyncToServe"
-              >
-                <div class="text-red">{{ $t('custom_audio_sync_disabled') }}</div>
-              </div>
-            </div>
-          </div>
+          <AuthSyncPanel v-if="tabIndex === 6" />
 
           <div class="body" v-if="tabIndex === 7">
             <div class="row">
@@ -776,14 +567,7 @@ function disable360() {
     <template v-slot="{ disabled }">
       <BaseButton
         size="large"
-        @click="doSaveSbConfig"
-        :disabled="disabled"
-        v-if="pendingNextAction === 'supabase_save'"
-        >{{ runtimeStore.isError ? $t('retry') : $t('save_config') }}</BaseButton
-      >
-      <BaseButton
-        size="large"
-        v-else-if="pendingNextAction === 'restore_history'"
+        v-if="pendingNextAction === 'restore_history'"
         @click="restoreHistoryData"
         :disabled="disabled"
         :loading="restoreLoading"
@@ -823,21 +607,6 @@ function disable360() {
     </div>
   </Dialog>
 
-  <Dialog v-model="showSbFirstSyncChoiceDialog" :title="$t('remote_data_detected_title')">
-    <div class="p-4 w-120">
-      <div class="">{{ $t('remote_data_detected_desc') }}</div>
-      <div class="color-gray mt-2">{{ $t('push_local_desc') }}</div>
-      <div class="color-gray">{{ $t('pull_remote_desc') }}</div>
-      <div class="flex justify-end mt-4">
-        <BaseButton size="large" :loading="sbSyncChoiceLoading" @click="onSbFirstSyncChoice('push_local')">{{
-          $t('push_local')
-        }}</BaseButton>
-        <BaseButton size="large" :loading="sbSyncChoiceLoading" @click="onSbFirstSyncChoice('pull_remote')">{{
-          $t('pull_remote')
-        }}</BaseButton>
-      </div>
-    </div>
-  </Dialog>
 </template>
 
 <style scoped lang="scss">

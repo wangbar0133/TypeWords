@@ -5,6 +5,7 @@ import IeDialog from '@/components/dialog/IeDialog.vue'
 import useTheme from '@/core/hooks/theme.ts'
 import { useRuntimeStore } from '@/core/stores/runtime.ts'
 import { useSettingStore } from '@/core/stores/setting.ts'
+import { useUserStore } from '@/core/stores/user.ts'
 import { ShortcutKey } from '@/core/types/enum.ts'
 import { onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,13 +13,13 @@ import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { useInit } from '@/core/composables/useInit.ts'
 import { useI18n } from 'vue-i18n'
 import { Supabase } from '@/core/utils/supabase.ts'
-import MiniProgram from '@/components/MiniProgram.vue'
 import WordCollectPopover from '@/components/word/WordCollectPopover.vue'
 
 const router = useRouter()
 const { toggleTheme, getTheme, setTheme } = useTheme()
 const runtimeStore = useRuntimeStore()
 const settingStore = useSettingStore()
+const userStore = useUserStore()
 let expand = $ref(false)
 const init = useInit()
 
@@ -47,7 +48,7 @@ const { locales, setLocale } = useI18n()
 const route = useRoute()
 
 const showIcon = $computed(() => {
-  return ['/words', '/articles', '/setting', '/help', '/doc', '/feedback'].includes(route.path)
+  return ['/words', '/setting'].includes(route.path)
 })
 
 onMounted(() => {
@@ -87,28 +88,16 @@ function onMouseLeave() {
           <IconFluentTextUnderlineDouble20Regular />
           <span>{{ $t('words') }}</span>
         </NuxtLink>
-        <NuxtLink id="article" to="/articles" class="row">
-          <IconFluentBookLetter20Regular />
-          <span>{{ $t('articles') }}</span>
-        </NuxtLink>
-        <NuxtLink to="/feedback" class="row">
-          <IconFluentCommentEdit20Regular />
-          <span>{{ $t('feedback') }}</span>
-        </NuxtLink>
-        <NuxtLink to="/doc" class="row">
-          <IconFluentDocument20Regular />
-          <span>{{ $t('document') }}</span>
-        </NuxtLink>
-        <NuxtLink to="/help" class="row">
-          <IconFluentQuestionCircle20Regular />
-          <span>{{ $t('help') }}</span>
-        </NuxtLink>
-        <!--        <div class="row" @click="router.push('/user')">-->
-        <!--          <IconFluentPerson20Regular/>-->
-        <!--          <span >用户</span>-->
-        <!--        </div>-->
       </div>
       <div class="px-4 pb-2 border-0 border-t-1 border-solid border-[var(--color-line)]">
+        <NuxtLink to="/setting?index=6" class="row" v-if="userStore.isLoggedIn">
+          <IconFluentPerson20Regular />
+          <span class="truncate">{{ userStore.email }}</span>
+        </NuxtLink>
+        <NuxtLink to="/setting?index=6" class="row" v-else>
+          <IconFluentPerson20Regular />
+          <span>{{ $t('auth_login') }}</span>
+        </NuxtLink>
         <NuxtLink to="/setting" class="row">
           <IconFluentSettings20Regular />
           <span>{{ $t('setting') }}</span>
@@ -120,17 +109,9 @@ function onMouseLeave() {
     <!-- 移动端顶部菜单栏 -->
     <div class="mobile-top-nav" :class="{ collapsed: settingStore.mobileNavCollapsed }">
       <div class="nav-items">
-        <div class="nav-item" @click="router.push('/')" :class="{ active: route.path === '/' }">
-          <IconFluentHome20Regular />
-          <span>{{ $t('home_page') }}</span>
-        </div>
         <div class="nav-item" @click="router.push('/words')" :class="{ active: route.path?.includes('/words') }">
           <IconFluentTextUnderlineDouble20Regular />
           <span>{{ $t('words') }}</span>
-        </div>
-        <div class="nav-item" @click="router.push('/articles')" :class="{ active: route.path?.includes('/articles') }">
-          <IconFluentBookLetter20Regular />
-          <span>{{ $t('articles') }}</span>
         </div>
         <div class="nav-item" @click="router.push('/setting')" :class="{ active: route.path === '/setting' }">
           <IconFluentSettings20Regular />
@@ -164,8 +145,6 @@ function onMouseLeave() {
       <router-view></router-view>
 
       <div class="absolute right-4 top-4 flex z-1 gap-2" v-if="showIcon">
-        <MiniProgram v-if="settingStore.load && !settingStore.first" />
-
         <div class="relative group">
           <BaseIcon>
             <IconPhTranslate />

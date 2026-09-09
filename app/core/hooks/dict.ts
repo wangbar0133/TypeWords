@@ -1,12 +1,9 @@
-import type { Article, Dict, TaskWords, Word } from '../types'
+import type { Dict, TaskWords, Word } from '../types'
 import { DictType, getDefaultDict, getDefaultWord } from '../types'
 import { useBaseStore } from '../stores/base.ts'
 import { useSettingStore } from '../stores/setting.ts'
-import { _getDictDataByUrl, cloneDeep, isDictIdMatch, resourceWrap, shuffle } from '../utils'
-import { computed, onMounted, watch } from 'vue'
-import { DICT_LIST, DictId } from '../config/env.ts'
-import { useRuntimeStore } from '../stores/runtime.ts'
-import { useRoute, useRouter } from 'vue-router'
+import { cloneDeep, isDictIdMatch, shuffle } from '../utils'
+import { DictId } from '../config/env.ts'
 import dayjs from 'dayjs'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 
@@ -111,30 +108,6 @@ export function useWordOptions() {
   }
 }
 
-export function useArticleOptions() {
-  const store = useBaseStore()
-
-  function isArticleCollect(val: Article) {
-    return !!store.collectArticle?.articles?.find(v => v.id === val.id)
-  }
-
-  //todo 这里先收藏，再修改。收藏里面的未同步。单词也是一样的
-  function toggleArticleCollect(val: Article) {
-    let rIndex = store.collectArticle.articles.findIndex(v => v.id === val.id)
-    if (rIndex > -1) {
-      store.collectArticle.articles.splice(rIndex, 1)
-    } else {
-      store.collectArticle.articles.push(val)
-    }
-    store.collectArticle.length = store.collectArticle.articles.length
-  }
-
-  return {
-    isArticleCollect,
-    toggleArticleCollect,
-  }
-}
-
 export function getCurrentStudyWord(): TaskWords {
   const store = useBaseStore()
   let data: TaskWords = { new: [], review: [] }
@@ -228,70 +201,4 @@ export function getCurrentStudyWord(): TaskWords {
     }
   }
   return data
-}
-
-export function useGetDict() {
-  const store = useBaseStore()
-  const runtimeStore = useRuntimeStore()
-  let waiting = $ref(false)
-  let fetching = $ref(false)
-  const route = useRoute()
-  const router = useRouter()
-
-  watch(
-    [() => store.load, () => waiting],
-    ([a, b]) => {
-      if (a && b) {
-        loadDict()
-      }
-    },
-    { immediate: true }
-  )
-
-  onMounted(() => {
-    // console.log('onMounted')
-    if (route.query?.isAdd) {
-      runtimeStore.editDict = getDefaultDict()
-    } else {
-      if (!runtimeStore.editDict?.id) {
-        let dictId = route.params?.id
-        if (!dictId) {
-          return router.push('/articles')
-        }
-        waiting = true
-      } else {
-        loadDict(runtimeStore.editDict)
-      }
-    }
-  })
-
-  async function loadDict(dict?: Dict) {
-    if (!dict) {
-      dict = getDefaultDict()
-      let dictId = route.params.id
-      //先在自己的词典列表里面找，如果没有再在资源列表里面找
-      dict = store.article.bookList.find(v => isDictIdMatch(v, dictId))
-      let r = await fetch(resourceWrap(DICT_LIST.ARTICLE.ALL))
-      let dict_list = await r.json()
-      if (!dict) dict = dict_list.flat().find(v => isDictIdMatch(v, dictId)) as Dict
-    }
-    if (dict && dict.id) {
-      if (!dict?.articles?.length && !dict?.custom && !dict?.system && !dict?.is_default) {
-        fetching = true
-        let r = await _getDictDataByUrl(dict, DictType.article)
-        runtimeStore.editDict = r
-      }
-      if (store.article.bookList.find(book => book.id === runtimeStore.editDict.id)) {
-      }
-    } else {
-      router.push('/articles')
-    }
-
-    waiting = false
-    fetching = false
-  }
-
-  const loading = computed(() => waiting || fetching)
-
-  return { loading }
 }

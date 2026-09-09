@@ -20,5 +20,27 @@
     "hidden": false,
     "category": "中国考试",
     "tags": ["大学英语"]
+  },
+  {
+    "id": "IELTSVocabularyBible",
+    "enName": "IELTSVocabularyBible",
+    "name": "雅思词汇真经",
+    "description": "雅思词汇真经",
+    "categoryId": 2,
+    "url": "IELTSVocabularyBible.json",
+    "length": 3673,
+    "language": "en",
+    "translateLanguage": "zh_CN",
+    "version": 1,
+    "type": "word",
+    "isDefault": false,
+    "recommended": true,
+    "userId": "00000000-0000-0000-0000-000000000001",
+    "createdAt": "2026-05-10 03:10:19.294875",
+    "updatedAt": "2026-06-03 15:27:15.113708",
+    "cover": null,
+    "hidden": false,
+    "category": "国际考试",
+    "tags": ["IELTS"]
   }
 ]

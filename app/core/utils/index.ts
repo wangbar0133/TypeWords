@@ -242,23 +242,7 @@ export async function checkAndUpgradeSaveSetting(val: any) {
   return defaultState
 }
 
-//筛选未自定义的词典，未自定义的词典不需要保存单词，用的时候再下载
-export function shakeCommonDict(n: BaseState): BaseState {
-  let data: BaseState = cloneDeep(n)
-  data.word.bookList.map((v: Dict) => {
-    if (!v.custom && !v.system) v.words = []
-  })
-  data.article.bookList.map((v: Dict) => {
-    if (!v.custom && !v.system) v.articles = []
-    else {
-      v.articles.map(a => {
-        //运行时再生成
-        a.sections = []
-      })
-    }
-  })
-  return data
-}
+export { shakeCommonDict } from './shake-common-dict'
 
 export function isMobile(): boolean {
   //@ts-ignore
