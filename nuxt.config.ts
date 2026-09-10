@@ -47,6 +47,15 @@ function toSiteURL(path: string, baseURL: string) {
 
 const appBaseURL = normalizeBaseURL(process.env.NUXT_APP_BASE_URL || '/')
 
+/** 从站点 origin 解析 host，用于注入 env.ts 的 Host 常量 */
+function resolveHost(origin: string): string {
+  try {
+    return new URL(origin).host
+  } catch {
+    return 'typewords.cc'
+  }
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -80,9 +89,20 @@ export default defineNuxtConfig({
         autoInstall: true,
       }),
     ],
+    // 站点 host 注入到 app/core/config/env.ts 的 Host 常量（Origin / og:url 等元数据由此拼出）。
+    // 取值与 runtimeConfig.public.origin 同源，保证 ORIGIN 一个变量即可改全站域名。
+    define: {
+      __APP_HOST__: JSON.stringify(resolveHost(siteOrigin)),
+    },
   },
   // 模块
   modules: ['@pinia/nuxt', '@unocss/nuxt', 'unplugin-icons/nuxt', '@vue-macros/nuxt', '@nuxtjs/i18n', '@nuxt/image'],
+  // 图片：项目内只有少量装饰性静态 SVG，不需要服务端优化。
+  // 默认 ipx provider 会走 /_ipx/* 的 Nitro 路由，静态托管（nginx/OSS）下必然 404；
+  // none 表示直接输出原始路径，两种部署方式都无需运行时依赖（也避免打包 sharp 原生二进制）。
+  image: {
+    provider: 'none',
+  },
   macros: {
     betterDefine: false,
   },

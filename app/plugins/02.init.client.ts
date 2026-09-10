@@ -12,7 +12,7 @@ export default defineNuxtPlugin(async nuxtApp => {
   ) {
     ;(function () {
       var t = document.createElement('script')
-      t.src = ENV.LIBS_URL + 't.js?t=' + Date.now()
+      t.src = ENV.LIBS_URL + '/t.js?t=' + Date.now()
       document.head.appendChild(t)
     })()
   }

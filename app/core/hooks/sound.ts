@@ -280,6 +280,19 @@ async function getFishSentenceAudioUrl(text: string): Promise<string> {
   return request
 }
 
+/**
+ * 是否启用 Fish Audio 例句合成。
+ * 静态部署（无 Nitro 服务端）或未配置 FISH_API_KEY 时为 false，
+ * 此时 /api/tts 不存在，应直接走有道/浏览器合成，避免无用请求与 404。
+ */
+function isFishTtsEnabled(): boolean {
+  try {
+    return Boolean(useRuntimeConfig().public.fishTtsEnabled)
+  } catch {
+    return false
+  }
+}
+
 export function usePlaySentenceAudio() {
   const settingStore = useSettingStore()
   const ttsFallback = useTTsPlayAudio()
@@ -317,6 +330,12 @@ export function usePlaySentenceAudio() {
     }
     if (!audio) {
       playBrowser()
+      return
+    }
+
+    // 未启用 Fish TTS 时跳过 /api/tts，直接走有道/浏览器合成
+    if (!isFishTtsEnabled()) {
+      playYoudaoOrBrowser(text, generation, onended, playBrowser)
       return
     }
 

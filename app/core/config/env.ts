@@ -3,7 +3,12 @@ import { offset } from '@floating-ui/dom'
 import { ShortcutKey, WordPracticeMode, WordPracticeStage } from '../types/enum.ts'
 
 export const GITHUB = 'https://github.com/zyronon/TypeWords'
-export const Host = 'typewords.cc'
+// 站点 host 由 nuxt.config 在构建时注入（取自 ORIGIN 环境变量）；
+// 未注入时（如单元测试环境）回退到官方域名。
+// 注意：typeof 对未声明变量是安全的，不会抛错。
+declare const __APP_HOST__: string | undefined
+
+export const Host = (typeof __APP_HOST__ === 'string' && __APP_HOST__) || 'typewords.cc'
 export const Old_Host = '2study.top'
 export const EMAIL = 'zyronon@163.com'
 export const Origin = `https://${Host}`
@@ -17,7 +22,7 @@ const map = {
   DEV: {
     API: 'http://localhost/',
     RESOURCE_URL: '',
-    LIBS_URL: '/libs/',
+    LIBS_URL: '/libs',
   },
 }
 
