@@ -1,21 +1,32 @@
+# 依赖与构建产物（容器内重新安装/构建）
 node_modules
 .nuxt
 .output
 dist
+.data
+.cache
+coverage
+
+# 环境变量文件：绝不进镜像。
+# Supabase/Fish 凭据全部通过运行时环境变量注入（NUXT_PUBLIC_* / NUXT_FISH_API_KEY），
+# 见 docker-compose.yml
+.env
+.env.*
+!.env.example
+
+# 版本库与 IDE
 .git
 .github
-.vscode
 .husky
+.vscode
+.DS_Store
+
+# 与运行无关的目录
+docs/
+scripts/
 *.log
 *.md
 !README.md
-.DS_Store
-.env*.local
-coverage
-.cache
-apps/vscode/
-apps/vscode-web/src/
-apps/vscode-web/public/
-apps/vscode-web/node_modules/
-docs/
-scripts/
+
+# 调试脚本
+.debug/

@@ -1,0 +1,51 @@
+# TypeWords 生产部署编排（ECS 上使用，只拉镜像、不在服务器构建）
+#
+# 用法：
+#   1. 把本文件放到服务器 ~/typewords/docker-compose.yml
+#   2. 同目录可放 .env 覆盖下方变量（IMAGE_TAG / EDGE_NETWORK）
+#   3. docker compose pull && docker compose up -d
+#
+# 设计要点：
+#   - 不映射任何宿主机端口：80/443 由已有的 img-hub nginx 占用，
+#     本容器只加入同一个 Docker 网络，由 nginx 通过容器名反代
+#   - 静态镜像的配置已烘焙在构建产物里，无需运行时环境变量
+#   - 服务器重启时本容器与 nginx 无启动顺序依赖（nginx 侧用 resolver 写法）
+
+services:
+  typewords:
+    image: ${IMAGE:-wangbar01334/typewords}:${IMAGE_TAG:-static}
+    container_name: typewords
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # ── 若改用 Node 容器方案（Dockerfile 而非 Dockerfile.static）──
+    # 镜像换成 ${IMAGE}:server，取消下面注释以注入运行时配置：
+    # environment:
+    #   - TZ=Asia/Shanghai
+    #   - NUXT_PUBLIC_SUPABASE_URL=${NUXT_PUBLIC_SUPABASE_URL}
+    #   - NUXT_PUBLIC_SUPABASE_ANON_KEY=${NUXT_PUBLIC_SUPABASE_ANON_KEY}
+    #   - NUXT_FISH_API_KEY=${FISH_API_KEY}
+    #   - NUXT_PUBLIC_ORIGIN=${ORIGIN}
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5567/words"]
+
+networks:
+  edge:
+    # img-hub 的 compose 创建的网络，实际名称带项目前缀，
+    # 服务器上用 `docker network ls | grep img-hub` 确认后填这里
+    external: true
+    name: ${EDGE_NETWORK:-img-hub_img-hub-network}

@@ -1,0 +1,12 @@
+# Dockerfile.static 专用忽略规则（BuildKit 会优先使用 <Dockerfile 名>.dockerignore）
+#
+# 静态镜像的构建上下文只需要两样东西：
+#   - .output/public        静态产物（本地 pnpm generate 生成）
+#   - deploy/nginx-static.conf
+# 其余全部排除，避免把 node_modules（数百 MB）、.git、源码等塞进构建上下文。
+
+*
+!.output
+!.output/public
+!deploy
+!deploy/nginx-static.conf
