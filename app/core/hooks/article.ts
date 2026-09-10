@@ -1,7 +1,7 @@
 import type { Article, Sentence } from '../types'
 import { getDefaultArticleWord, getDefaultDict, PracticeArticleWordType } from '../types'
 import { _nextTick, cloneDeep, ensureCustomDictCopy } from '../utils'
-import { usePlaySentenceAudio, usePlayWordAudio } from './sound'
+import { usePlaySentenceAudio } from './sound'
 import { getSentenceAllText, getSentenceAllTranslateText } from './translate'
 import { useBaseStore } from '../stores/base'
 import { useRuntimeStore } from '../stores/runtime'
@@ -339,49 +339,6 @@ export function splitCNArticle2(text: string): string {
     .join('\n')
     .trim()
   return s
-}
-
-export function usePlaySentenceAudio() {
-  const playWordAudio = usePlayWordAudio()
-  let timer = 0
-  let onEndCb = null
-
-  function playSentenceAudio(sentence: Sentence, ref?: HTMLAudioElement, onEnd?: () => void) {
-    if (sentence.audioPosition?.length && ref && ref.src) {
-      if (onEndCb) {
-        onEndCb()
-        onEndCb = null
-      }
-      clearTimeout(timer)
-      onEndCb = () => onEnd?.()
-      ref.onerror = onEndCb
-      if (ref.played) {
-        ref.pause()
-      }
-      let start = sentence.audioPosition[0]
-      // ref.volume = settingStore.wordSoundVolume / 100
-      ref.currentTime = start
-      ref.play()
-      let end = sentence.audioPosition?.[1]
-      // console.log(sentence.audioPosition,(end - start) * 1000)
-
-      if (end && end !== -1) {
-        timer = setTimeout(
-          () => {
-            ref.pause()
-            onEndCb()
-          },
-          ((end - start) / ref.playbackRate) * 1000
-        )
-      } else {
-        ref.onended = onEndCb
-      }
-    } else {
-      playWordAudio(sentence.text, false, onEnd)
-    }
-  }
-
-  return { playSentenceAudio }
 }
 
 export interface ArticleTextAudio {
