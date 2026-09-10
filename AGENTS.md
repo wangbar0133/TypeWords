@@ -7,8 +7,19 @@ Local-first English **word** typing practice. Article follow-typing has been rem
 - `pnpm install`
 - `pnpm dev` — Nuxt dev server on port `5567`
 - `pnpm test` — Vitest unit tests
-- `pnpm generate` — static site
+- `pnpm generate` — static site (see Deploy: not sufficient on its own)
 - `pnpm i18n:write` — after editing `i18n/i18n.xlsx`
+- `./scripts/build-static.sh` — build static Docker image and push to Docker Hub
+
+## Deploy
+
+Full flow and host setup: `docs/deploy.md`. Deployed instance: `https://words.neicun.online` (Docker behind an existing nginx).
+
+- **`pnpm generate` alone is not a deployable static site.** `@nuxtjs/i18n` serves locale messages from a Nitro route that prerendering skips, so the UI falls back to raw i18n keys. Always follow generate with `node scripts/gen-i18n-messages.mjs` (`scripts/build-static.sh` does both).
+- Keep `image: { provider: 'none' }` in `nuxt.config.ts`. The default IPX provider routes images through a server endpoint (`/_ipx/*`) that 404s when hosted statically. Bonus: no sharp binary is bundled, so `.output/server` stays architecture-independent.
+- The site domain is baked at build time: `ORIGIN` drives canonical URLs (`runtimeConfig.public.origin`), `HOST` is injected as `__APP_HOST__` into `app/core/config/env.ts` (`Host` / `Origin` constants used by `og:url`, share text). Changing the domain requires a rebuild.
+- `public/libs/t.js` used to load 51.la / Baidu / Umami trackers pointed at the **upstream author's** accounts. They are intentionally disabled — do not re-enable upstream IDs; the file documents how to add your own.
+- `LIBS_URL` has no trailing slash; join paths as `${ENV.LIBS_URL}/x.js`.
 
 ## Code
 

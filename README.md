@@ -123,6 +123,23 @@ docs/                      # 贡献指南、改造基线等文档
 | `pnpm test` | 运行 Vitest 单元测试（改动练习引擎后请运行） |
 | `pnpm generate` | 打包静态站点 |
 | `pnpm i18n:write` | 编辑 `i18n/i18n.xlsx` 后重新生成语言文件 |
+| `./scripts/build-static.sh` | 构建静态镜像并推送到 Docker Hub（详见部署文档） |
+
+### 部署
+
+推荐用 Docker 部署静态镜像（nginx 托管静态产物，约 33MB，无需 Node 运行时）：
+
+```bash
+./scripts/build-static.sh              # 构建并推送镜像（读取 .env 烘焙站点配置）
+# 服务器上
+docker compose pull && docker compose up -d
+```
+
+完整流程（域名、HTTPS 证书、nginx 反代、回滚、故障排查）见 [`docs/deploy.md`](docs/deploy.md)。
+
+相关文件：`Dockerfile.static`（静态镜像）、`docker-compose.prod.yml`（服务器编排）、`deploy/nginx-static.conf`（容器内 nginx）、`scripts/build-static.sh`（一键构建推送）。
+
+> 站点域名在构建时烘焙：`.env` 里的 `ORIGIN` 控制 canonical URL，`HOST` 控制 og:url 等元数据，改域名需重新构建。
 
 给贡献者的话：
 
